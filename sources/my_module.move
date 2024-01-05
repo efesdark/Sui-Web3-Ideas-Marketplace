@@ -167,6 +167,131 @@ module my_first_package::my_module {
             card.open_to_sale
         )
     }
-
+    mod tests {
+        use super::*;
+        use sui::coin::Coin;
+    
+        #[test]
+        fn test_create_card() {
+            let mut ctx = TxContext::new(); // Create a mock transaction context
+            let mut ideas = Ideas {
+                id: UID::default(),
+                owner: Default::default(),
+                counter: 0,
+                cards: ObjectTable::new(&mut ctx),
+            };
+    
+            let name = b"MyCardName".to_vec();
+            let author = b"AuthorName".to_vec();
+            let img_url = b"http://example.com/image.jpg".to_vec();
+            let years_of_invention = 5;
+            let technologies = b"Tech1, Tech2".to_vec();
+            let portfolio = b"My Portfolio".to_vec();
+            let contact = b"contact@example.com".to_vec();
+            let payment = Coin::<SUI>::new(1);
+    
+            create_card(
+                name.clone(),
+                author.clone(),
+                img_url.clone(),
+                years_of_invention,
+                technologies.clone(),
+                portfolio.clone(),
+                contact.clone(),
+                payment,
+                &mut ideas,
+                &mut ctx,
+            );
+    
+            assert_eq!(ideas.counter, 1);
+    
+            // Retrieve the card information and assert its correctness
+            let card_info = get_card_info(&ideas, 1);
+            assert_eq!(card_info.0, String::from_utf8(name).unwrap());
+            assert_eq!(card_info.2, String::from_utf8(author).unwrap());
+            assert_eq!(card_info.4.unwrap(), ""); // Description should be empty initially
+            assert_eq!(card_info.5, years_of_invention);
+            assert_eq!(card_info.6, String::from_utf8(technologies).unwrap());
+            assert_eq!(card_info.7, String::from_utf8(portfolio).unwrap());
+            assert_eq!(card_info.8, String::from_utf8(contact).unwrap());
+            assert_eq!(card_info.9, true); // open_to_sale should be true initially
+        }
+    
+        #[test]
+        fn test_update_card_description() {
+            let mut ctx = TxContext::new();
+            let mut ideas = Ideas {
+                id: UID::default(),
+                owner: Default::default(),
+                counter: 0,
+                cards: ObjectTable::new(&mut ctx),
+            };
+    
+            // Create a card
+            let payment = Coin::<SUI>::new(1);
+            create_card(
+                b"MyCardName".to_vec(),
+                b"AuthorName".to_vec(),
+                b"http://example.com/image.jpg".to_vec(),
+                5,
+                b"Tech1, Tech2".to_vec(),
+                b"My Portfolio".to_vec(),
+                b"contact@example.com".to_vec(),
+                payment,
+                &mut ideas,
+                &mut ctx,
+            );
+    
+            // Get the ID of the created card
+            let card_id = ideas.counter;
+    
+            // Update the description
+            let new_description = b"Updated description".to_vec();
+            update_card_description(&mut ideas, new_description.clone(), card_id, &mut ctx);
+    
+            // Retrieve the card information and assert the description is updated
+            let updated_card_info = get_card_info(&ideas, card_id);
+            assert_eq!(
+                updated_card_info.4.unwrap(),
+                String::from_utf8(new_description).unwrap()
+            );
+        }
+    
+        #[test]
+        fn test_deactivate_card() {
+            let mut ctx = TxContext::new();
+            let mut ideas = Ideas {
+                id: UID::default(),
+                owner: Default::default(),
+                counter: 0,
+                cards: ObjectTable::new(&mut ctx),
+            };
+    
+            // Create a card
+            let payment = Coin::<SUI>::new(1);
+            create_card(
+                b"MyCardName".to_vec(),
+                b"AuthorName".to_vec(),
+                b"http://example.com/image.jpg".to_vec(),
+                5,
+                b"Tech1, Tech2".to_vec(),
+                b"My Portfolio".to_vec(),
+                b"contact@example.com".to_vec(),
+                payment,
+                &mut ideas,
+                &mut ctx,
+            );
+    
+            // Get the ID of the created card
+            let card_id = ideas.counter;
+    
+            // Deactivate the card
+            deactivate_card(&mut ideas, card_id, &mut ctx);
+    
+            // Retrieve the card information and assert open_to_sale is false
+            let deactivated_card_info = get_card_info(&ideas, card_id);
+            assert_eq!(deactivated_card_info.9, false);
+        }
+    }
 
 }
